@@ -7,44 +7,58 @@ import java.util.Objects;
 /**
  * This class represents a student in the Secretariat application.
  * It contains all the student's personal and academic information.
+ * 
+ * The class implements Serializable to allow for saving/loading
+ * student data to/from files or for network transmission.
  */
 public class CStudent implements Serializable {
+    // Serialization version UID ensures compatibility between different versions of the class
     private static final long serialVersionUID = 1L;
     
-    // Required fields as specified
-    private String id;
-    private String name;
-    private String surname;
-    private String country;
-    private LocalDate dateOfBirth;
-    private boolean isStudyAbroad;
+    // Core identifying and personal information fields
+    private String id;          // Unique identifier for each student
+    private String name;        // Student's first name
+    private String surname;     // Student's last name/family name
+    private String country;     // Student's country of origin
+    private LocalDate dateOfBirth; // Student's birth date (using modern Java time API)
+    private boolean isStudyAbroad; // Flag indicating if this is an exchange/study abroad student
     
-    // Additional fields
-    private double gpa;
-    private String major;
-    private LocalDate enrollmentDate;
-    private String email;
-    private String phoneNumber;
+    // Academic information fields
+    private double gpa;         // Grade Point Average (typically 0.0-4.0)
+    private String major;       // Student's main field of study
+    private LocalDate enrollmentDate; // When the student first enrolled
+    private String email;       // Student's contact email
+    private String phoneNumber; // Student's contact phone number
 
     /**
-     * Default constructor
+     * Default constructor that initializes all fields with empty or default values.
+     * This is useful when creating a new student record from scratch.
      */
     public CStudent() {
+        // Initialize with empty/default values
         this.id = "";
         this.name = "";
         this.surname = "";
         this.country = "";
-        this.dateOfBirth = LocalDate.now();
+        this.dateOfBirth = LocalDate.now(); // Current date as placeholder
         this.isStudyAbroad = false;
         this.gpa = 0.0;
         this.major = "";
-        this.enrollmentDate = LocalDate.now();
+        this.enrollmentDate = LocalDate.now(); // Current date as placeholder
         this.email = "";
         this.phoneNumber = "";
     }
 
     /**
-     * Parameterized constructor with required fields
+     * Parameterized constructor with required fields only.
+     * Other fields will be set to default values and can be updated later.
+     * 
+     * @param id Unique student identifier
+     * @param name Student's first name
+     * @param surname Student's last name
+     * @param country Student's country of origin
+     * @param dateOfBirth Student's date of birth
+     * @param isStudyAbroad Whether this is an international/exchange student
      */
     public CStudent(String id, String name, String surname, String country, 
                    LocalDate dateOfBirth, boolean isStudyAbroad) {
@@ -54,6 +68,7 @@ public class CStudent implements Serializable {
         this.country = country;
         this.dateOfBirth = dateOfBirth;
         this.isStudyAbroad = isStudyAbroad;
+        // Set default values for optional fields
         this.gpa = 0.0;
         this.major = "";
         this.enrollmentDate = LocalDate.now();
@@ -62,11 +77,24 @@ public class CStudent implements Serializable {
     }
 
     /**
-     * Full parameterized constructor
+     * Full parameterized constructor for creating a complete student record.
+     * 
+     * @param id Unique student identifier
+     * @param name Student's first name
+     * @param surname Student's last name
+     * @param country Student's country of origin
+     * @param dateOfBirth Student's date of birth
+     * @param isStudyAbroad Whether this is an international/exchange student
+     * @param gpa Student's Grade Point Average
+     * @param major Student's field of study
+     * @param enrollmentDate Date when student enrolled
+     * @param email Student's email address
+     * @param phoneNumber Student's phone number
      */
     public CStudent(String id, String name, String surname, String country, 
                    LocalDate dateOfBirth, boolean isStudyAbroad, double gpa,
                    String major, LocalDate enrollmentDate, String email, String phoneNumber) {
+        // Initialize all fields with provided values
         this.id = id;
         this.name = name;
         this.surname = surname;
@@ -80,11 +108,21 @@ public class CStudent implements Serializable {
         this.phoneNumber = phoneNumber;
     }
     
-    // Getters and setters
+    // Getters and setters for all properties
+    // These provide encapsulation - controlled access to the class's private fields
+
+    /**
+     * Gets the student's unique identifier
+     * @return The student's ID
+     */
     public String getId() {
         return id;
     }
 
+    /**
+     * Sets the student's unique identifier
+     * @param id New ID value
+     */
     public void setId(String id) {
         this.id = id;
     }
@@ -171,6 +209,8 @@ public class CStudent implements Serializable {
 
     /**
      * Calculate the age of the student based on the date of birth
+     * Note: This is a simple calculation and doesn't account for exact days
+     * 
      * @return the age in years
      */
     public int calculateAge() {
@@ -179,32 +219,56 @@ public class CStudent implements Serializable {
 
     /**
      * Calculate how many years the student has been enrolled
+     * Note: This is a simple calculation and doesn't account for exact days
+     * 
      * @return years since enrollment
      */
     public int calculateYearsEnrolled() {
         return LocalDate.now().getYear() - enrollmentDate.getYear();
     }
 
+    /**
+     * Checks if this student is equal to another object.
+     * Students are considered equal if they have the same ID,
+     * as the ID is designed to be unique for each student.
+     * 
+     * @param o The object to compare with
+     * @return true if the objects are equal, false otherwise
+     */
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) return true;  // Same object reference
+        if (o == null || getClass() != o.getClass()) return false; // Not the same type
         CStudent student = (CStudent) o;
-        return Objects.equals(id, student.id);
+        return Objects.equals(id, student.id); // Compare by ID only
     }
 
+    /**
+     * Generates a hash code for this student based on their ID.
+     * This is consistent with the equals method.
+     * 
+     * @return A hash code value for this student
+     */
     @Override
     public int hashCode() {
         return Objects.hash(id);
     }
 
+    /**
+     * Returns a string representation of the student in the format:
+     * "surname, name (id)"
+     * 
+     * @return A concise string representation
+     */
     @Override
     public String toString() {
         return surname + ", " + name + " (" + id + ")";
     }
     
     /**
-     * Returns a detailed string representation of the student
+     * Returns a detailed string representation of the student including all fields
+     * This is useful for displays that need to show comprehensive student information
+     * 
      * @return detailed information about the student
      */
     public String getDetailedInfo() {

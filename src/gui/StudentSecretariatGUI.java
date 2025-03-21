@@ -638,25 +638,5 @@ public class StudentSecretariatGUI extends JFrame {
         statusLabel.setText("Generated new ID: " + generatedId);
     }
     
-    /**
-     * Adds sample data for testing
-     */
-    public void addSampleData() {
-        students.add(new CStudent("S001", "John", "Smith", "USA", 
-                                 LocalDate.of(2000, 5, 15), false,
-                                 3.8, "Computer Science", LocalDate.of(2019, 9, 1),
-                                 "john.smith@example.com", "555-1234"));
-        
-        students.add(new CStudent("S002", "Maria", "Garcia", "Spain", 
-                                 LocalDate.of(1999, 7, 22), true,
-                                 3.5, "Business", LocalDate.of(2018, 9, 1),
-                                 "maria.g@example.com", "555-5678"));
-        
-        students.add(new CStudent("S003", "Hiroshi", "Tanaka", "Japan", 
-                                 LocalDate.of(2001, 3, 10), true,
-                                 4.0, "Engineering", LocalDate.of(2020, 9, 1),
-                                 "h.tanaka@example.com", "555-9012"));
-                                 
-        refreshStudentList();
-    }
+ 
 }

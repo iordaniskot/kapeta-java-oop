@@ -11,28 +11,36 @@ import javax.swing.JOptionPane;
 
 /**
  * Helper class for the Secretariat application.
- * Provides utility functions for importing and exporting student data.
+ * This is a utility class that provides static methods for common operations
+ * such as importing and exporting data, validation, and student creation.
+ * 
+ * Following the Single Responsibility Principle, this class handles operations
+ * that don't belong in the Student model or UI classes.
  */
 public class Helper {
+    // Date format pattern used throughout the application for consistency
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     
     /**
-     * Exports a list of students to a CSV file
+     * Exports a list of students to a CSV file.
+     * The CSV format makes the data accessible to spreadsheet programs and other systems.
      * 
      * @param students The list of students to export
      * @param filePath The path to the CSV file
      * @return true if export was successful, false otherwise
      */
     public static boolean exportStudentsToCSV(List<CStudent> students, String filePath) {
+        // Basic validation to prevent processing empty data
         if (students == null || students.isEmpty()) {
             return false;
         }
         
+        // Use try-with-resources to ensure the writer is closed properly
         try (PrintWriter writer = new PrintWriter(new FileWriter(filePath))) {
-            // Write header
+            // Write header line with column names
             writer.println("ID,Name,Surname,Country,DateOfBirth,IsStudyAbroad,GPA,Major,EnrollmentDate,Email,PhoneNumber");
             
-            // Write each student's data
+            // Write each student's data as a CSV row
             for (CStudent student : students) {
                 StringBuilder line = new StringBuilder();
                 line.append(student.getId()).append(",");
@@ -51,13 +59,15 @@ public class Helper {
             }
             return true;
         } catch (IOException e) {
+            // Log the error and return false to indicate failure
             System.err.println("Error exporting students: " + e.getMessage());
             return false;
         }
     }
     
     /**
-     * Imports students from a CSV file, showing dialogs for duplicate IDs
+     * Imports students from a CSV file, showing dialogs for duplicate IDs.
+     * This is the most comprehensive import method that handles UI interactions.
      * 
      * @param filePath The path to the CSV file
      * @param existingStudents List of existing students to check for duplicate IDs
@@ -68,14 +78,15 @@ public class Helper {
         List<CStudent> importedStudents = new ArrayList<>();
         
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
-            // Skip header row
+            // Skip header row (column names)
             String line = reader.readLine();
             
-            // Process data rows
+            // Process each data row in the CSV file
             int lineNumber = 1;
             while ((line = reader.readLine()) != null) {
                 lineNumber++;
                 try {
+                    // Parse the line into a CStudent object
                     CStudent student = parseStudentFromCSV(line);
                     if (student != null) {
                         // Handle duplicate IDs by prompting for new IDs
@@ -87,6 +98,7 @@ public class Helper {
                         }
                     }
                 } catch (Exception e) {
+                    // Log error but continue processing other lines
                     System.err.println("Error parsing line " + lineNumber + ": " + line);
                     System.err.println("Error details: " + e.getMessage());
                 }
@@ -99,7 +111,14 @@ public class Helper {
     }
     
     /**
-     * Handles duplicate IDs by prompting the user to provide a new ID
+     * Handles duplicate IDs by prompting the user to provide a new ID.
+     * This method manages the UI interaction for resolving duplicate ID conflicts.
+     * 
+     * @param student The student with a potentially duplicate ID
+     * @param importedStudents Already imported students in this batch
+     * @param existingStudents Existing students in the database
+     * @param parent The parent component for dialog boxes
+     * @return The student with a unique ID, or null if the user chose to skip
      */
     private static CStudent handleDuplicateIDs(CStudent student, List<CStudent> importedStudents, 
                                               List<CStudent> existingStudents, Component parent) {
@@ -107,7 +126,7 @@ public class Helper {
         boolean isDuplicate = false;
         String duplicateSource = "";
         
-        // Check for duplicate in already imported students
+        // First, check if this ID already exists in the current import batch
         for (CStudent s : importedStudents) {
             if (s.getId().equals(studentId)) {
                 isDuplicate = true;
@@ -116,7 +135,7 @@ public class Helper {
             }
         }
         
-        // Check for duplicate in existing students
+        // Then check existing database if not already found as duplicate
         if (!isDuplicate && existingStudents != null) {
             for (CStudent s : existingStudents) {
                 if (s.getId().equals(studentId)) {
@@ -127,12 +146,14 @@ public class Helper {
             }
         }
         
-        // If duplicate found, prompt for a new ID
+        // If duplicate found, enter a resolution loop until a unique ID is provided or user cancels
         while (isDuplicate) {
+            // Prepare the message explaining the duplicate situation
             String message = "Duplicate student ID '" + studentId + "' found in " + duplicateSource + ".\n" +
                             "Student: " + student.getName() + " " + student.getSurname() + "\n" +
                             "Please choose an option:";
             
+            // Options for resolving the duplicate ID
             String[] options = {"Enter Manual ID", "Generate Auto ID", "Skip Student"};
             int choice = JOptionPane.showOptionDialog(
                 parent, message, "Duplicate ID",
@@ -140,7 +161,7 @@ public class Helper {
                 null, options, options[0]);
             
             if (choice == 0) {
-                // Manual ID entry
+                // User chose to manually enter a new ID
                 String newId = JOptionPane.showInputDialog(parent, 
                     "Enter a new unique ID:", "Duplicate ID", JOptionPane.QUESTION_MESSAGE);
                 
@@ -151,10 +172,10 @@ public class Helper {
                 
                 studentId = newId.trim();
             } else if (choice == 1) {
-                // Auto-generate ID
+                // User chose to auto-generate ID
                 studentId = generateUniqueId();
             } else {
-                // Skip student
+                // User chose to skip this student
                 return null;
             }
             
@@ -191,7 +212,8 @@ public class Helper {
     }
 
     /**
-     * Validates a student ID
+     * Validates a student ID to ensure it's not null or empty.
+     * 
      * @param id The ID to validate
      * @return true if the ID is valid, false otherwise
      */
@@ -200,21 +222,31 @@ public class Helper {
     }
     
     /**
-     * Overloaded method for compatibility
+     * Simplified import method for backward compatibility.
+     * This overload doesn't check for duplicates or show UI prompts.
+     * 
+     * @param filePath The path to the CSV file
+     * @return List of imported students
      */
     public static List<CStudent> importStudentsFromCSV(String filePath) {
         return importStudentsFromCSV(filePath, null, null);
     }
     
     /**
-     * Overloaded method for compatibility
+     * Import method that checks for duplicates but doesn't show UI prompts.
+     * This is useful for non-GUI contexts that still need duplicate checking.
+     * 
+     * @param filePath The path to the CSV file
+     * @param existingStudents List of existing students to check for duplicate IDs
+     * @return List of imported students
      */
     public static List<CStudent> importStudentsFromCSV(String filePath, List<CStudent> existingStudents) {
         return importStudentsFromCSV(filePath, existingStudents, null);
     }
     
     /**
-     * Parses a single line from a CSV file into a CStudent object
+     * Parses a single line from a CSV file into a CStudent object.
+     * This method handles missing fields and formatting issues.
      * 
      * @param line A line from the CSV file
      * @return A CStudent object or null if required fields are missing
@@ -222,7 +254,7 @@ public class Helper {
     private static CStudent parseStudentFromCSV(String line) {
         String[] data = line.split(",");
         
-        // Handle case where there might be fewer fields than expected
+        // Extract required fields with safety checks
         String id = (data.length > 0) ? data[0].trim() : "";
         String name = (data.length > 1) ? data[1].trim() : "";
         String surname = (data.length > 2) ? data[2].trim() : "";
@@ -233,9 +265,10 @@ public class Helper {
             return null;
         }
         
+        // Extract and process remaining fields with safety checks
         String country = (data.length > 3) ? data[3].trim() : "";
         
-        // Parse date of birth with fallback
+        // Parse date of birth with fallback to current date if invalid
         LocalDate dob;
         try {
             dob = (data.length > 4 && !data[4].trim().isEmpty()) ? 
@@ -256,7 +289,7 @@ public class Helper {
             }
         }
         
-        // Parse GPA with fallback
+        // Parse GPA with fallback and range validation
         double gpa = 0.0;
         if (data.length > 6 && !data[6].trim().isEmpty()) {
             try {
@@ -286,7 +319,7 @@ public class Helper {
         String email = (data.length > 9) ? data[9].trim() : "";
         String phone = (data.length > 10) ? data[10].trim() : "";
         
-        // Create and return the student
+        // Create and return the student with all available data
         return new CStudent(
             id, name, surname, country, dob, isStudyAbroad,
             gpa, major, enrollmentDate, email, phone
@@ -294,26 +327,31 @@ public class Helper {
     }
 
     /**
-     * Generates a unique ID based on the current timestamp
-     * @return A string ID in the format S + timestamp
+     * Generates a unique ID based on the current timestamp.
+     * This ensures uniqueness even when multiple IDs are generated in quick succession.
+     * 
+     * @return A string ID in the format S + timestamp in milliseconds
      */
     public static String generateUniqueId() {
         return "S" + System.currentTimeMillis();
     }
 
     /**
-     * Checks if a student ID is a duplicate in a list of students
+     * Checks if a student ID is a duplicate in a list of students.
+     * This is useful for validation before adding or updating students.
      * 
      * @param id The ID to check
      * @param students The list of students to check against
      * @return true if the ID exists in the list, false otherwise
      */
     public static boolean isDuplicateStudentId(String id, List<CStudent> students) {
+        // Stream-based approach to check if any student has matching ID
         return students.stream().anyMatch(s -> s.getId().equals(id));
     }
 
     /**
-     * Checks if a student ID is a duplicate in a list of students, excluding a specific index
+     * Checks if a student ID is a duplicate in a list, excluding a specific index.
+     * This is useful when updating an existing student to ignore its own ID.
      * 
      * @param id The ID to check
      * @param students The list of students to check against
@@ -322,6 +360,7 @@ public class Helper {
      */
     public static boolean isDuplicateStudentId(String id, List<CStudent> students, int excludeIndex) {
         for (int i = 0; i < students.size(); i++) {
+            // Skip the student at the exclude index (typically the one being updated)
             if (i != excludeIndex && students.get(i).getId().equals(id)) {
                 return true;
             }
@@ -330,7 +369,8 @@ public class Helper {
     }
 
     /**
-     * Creates or updates a student with validated data from form fields
+     * Creates or updates a student with validated data from form fields.
+     * This method centralizes validation logic and student creation/update.
      * 
      * @param student The student to update (or null to create a new one)
      * @param id The student ID
@@ -351,17 +391,17 @@ public class Helper {
                                               String country, String dobText, boolean isStudyAbroad,
                                               String gpaText, String major, String enrollmentDateText,
                                               String email, String phone) throws IllegalArgumentException {
-        // Basic validation
+        // Validate required fields
         if (!isValidStudentId(id) || name.isEmpty() || surname.isEmpty()) {
             throw new IllegalArgumentException("ID, Name and Surname are required fields and cannot be blank.");
         }
         
-        // Create a new student if needed
+        // Create a new student if none was provided
         if (student == null) {
             student = new CStudent();
         }
         
-        // Parse dates
+        // Parse and validate dates
         LocalDate dob = null;
         LocalDate enrollmentDate = null;
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -378,7 +418,7 @@ public class Helper {
             throw new IllegalArgumentException("Invalid date format. Please use YYYY-MM-DD format.");
         }
         
-        // Parse GPA
+        // Parse and validate GPA
         double gpa = 0.0;
         try {
             if (!gpaText.isEmpty()) {
@@ -391,7 +431,7 @@ public class Helper {
             throw new IllegalArgumentException("Invalid GPA format. Please enter a number.");
         }
         
-        // Set student fields
+        // Set student fields with validated data
         student.setId(id);
         student.setName(name);
         student.setSurname(surname);
