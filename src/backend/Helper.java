@@ -300,4 +300,110 @@ public class Helper {
     public static String generateUniqueId() {
         return "S" + System.currentTimeMillis();
     }
+
+    /**
+     * Checks if a student ID is a duplicate in a list of students
+     * 
+     * @param id The ID to check
+     * @param students The list of students to check against
+     * @return true if the ID exists in the list, false otherwise
+     */
+    public static boolean isDuplicateStudentId(String id, List<CStudent> students) {
+        return students.stream().anyMatch(s -> s.getId().equals(id));
+    }
+
+    /**
+     * Checks if a student ID is a duplicate in a list of students, excluding a specific index
+     * 
+     * @param id The ID to check
+     * @param students The list of students to check against
+     * @param excludeIndex The index to exclude from the check
+     * @return true if the ID exists in the list (excluding the specified index), false otherwise
+     */
+    public static boolean isDuplicateStudentId(String id, List<CStudent> students, int excludeIndex) {
+        for (int i = 0; i < students.size(); i++) {
+            if (i != excludeIndex && students.get(i).getId().equals(id)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Creates or updates a student with validated data from form fields
+     * 
+     * @param student The student to update (or null to create a new one)
+     * @param id The student ID
+     * @param name The student name
+     * @param surname The student surname
+     * @param country The student country
+     * @param dobText The date of birth as text
+     * @param isStudyAbroad Whether the student is studying abroad
+     * @param gpaText The GPA as text
+     * @param major The student major
+     * @param enrollmentDateText The enrollment date as text
+     * @param email The student email
+     * @param phone The student phone number
+     * @return The updated or created student
+     * @throws IllegalArgumentException If any validation fails
+     */
+    public static CStudent createOrUpdateStudent(CStudent student, String id, String name, String surname,
+                                              String country, String dobText, boolean isStudyAbroad,
+                                              String gpaText, String major, String enrollmentDateText,
+                                              String email, String phone) throws IllegalArgumentException {
+        // Basic validation
+        if (!isValidStudentId(id) || name.isEmpty() || surname.isEmpty()) {
+            throw new IllegalArgumentException("ID, Name and Surname are required fields and cannot be blank.");
+        }
+        
+        // Create a new student if needed
+        if (student == null) {
+            student = new CStudent();
+        }
+        
+        // Parse dates
+        LocalDate dob = null;
+        LocalDate enrollmentDate = null;
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        
+        try {
+            if (!dobText.isEmpty()) {
+                dob = LocalDate.parse(dobText, formatter);
+            }
+            
+            if (!enrollmentDateText.isEmpty()) {
+                enrollmentDate = LocalDate.parse(enrollmentDateText, formatter);
+            }
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("Invalid date format. Please use YYYY-MM-DD format.");
+        }
+        
+        // Parse GPA
+        double gpa = 0.0;
+        try {
+            if (!gpaText.isEmpty()) {
+                gpa = Double.parseDouble(gpaText);
+                if (gpa < 0 || gpa > 4.0) {
+                    throw new IllegalArgumentException("GPA must be between 0.0 and 4.0");
+                }
+            }
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid GPA format. Please enter a number.");
+        }
+        
+        // Set student fields
+        student.setId(id);
+        student.setName(name);
+        student.setSurname(surname);
+        student.setCountry(country);
+        student.setDateOfBirth(dob != null ? dob : LocalDate.now());
+        student.setStudyAbroad(isStudyAbroad);
+        student.setGpa(gpa);
+        student.setMajor(major);
+        student.setEnrollmentDate(enrollmentDate != null ? enrollmentDate : LocalDate.now());
+        student.setEmail(email);
+        student.setPhoneNumber(phone);
+        
+        return student;
+    }
 }

@@ -380,89 +380,62 @@ public class StudentSecretariatGUI extends JFrame {
             currentStudent = new CStudent();
         }
         
-        // Validation
+        // Gather form field data
         String newId = idField.getText().trim();
-        if (!Helper.isValidStudentId(newId) || 
-            nameField.getText().trim().isEmpty() || 
-            surnameField.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "ID, Name and Surname are required fields and cannot be blank.", 
-                                         "Validation Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
+        String name = nameField.getText().trim();
+        String surname = surnameField.getText().trim();
+        String country = countryField.getText().trim();
+        String dobText = dateOfBirthField.getText().trim();
+        boolean isStudyAbroad = studyAbroadCheckBox.isSelected();
+        String gpaText = gpaField.getText().trim();
+        String major = majorField.getText().trim();
+        String enrollmentDateText = enrollmentDateField.getText().trim();
+        String email = emailField.getText().trim();
+        String phone = phoneField.getText().trim();
         
-        // Check for duplicate ID
-        for (int i = 0; i < students.size(); i++) {
-            if (i != currentStudentIndex && students.get(i).getId().equals(newId)) {
+        // Validate and save the data using the Helper class
+        try {
+            // First check if this is a duplicate ID (if editing an existing student)
+            boolean isDuplicate = false;
+            if (currentStudentIndex == -1) { // New student
+                isDuplicate = Helper.isDuplicateStudentId(newId, students);
+            } else { // Existing student
+                isDuplicate = Helper.isDuplicateStudentId(newId, students, currentStudentIndex);
+            }
+            
+            if (isDuplicate) {
                 JOptionPane.showMessageDialog(this, 
                     "Student ID '" + newId + "' already exists. IDs must be unique.", 
                     "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
-        }
-        
-        // Update ID field with trimmed value
-        idField.setText(newId);
-        
-        // Parse dates
-        LocalDate dob = null;
-        LocalDate enrollmentDate = null;
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        
-        try {
-            if (!dateOfBirthField.getText().trim().isEmpty()) {
-                dob = LocalDate.parse(dateOfBirthField.getText(), formatter);
+            
+            // Let the Helper class validate and process the data
+            CStudent updatedStudent = Helper.createOrUpdateStudent(
+                currentStudent, newId, name, surname, country, 
+                dobText, isStudyAbroad, gpaText, major, 
+                enrollmentDateText, email, phone
+            );
+            
+            // Update the current student reference
+            currentStudent = updatedStudent;
+            
+            // Add to list if new
+            if (currentStudentIndex == -1) {
+                students.add(currentStudent);
+                statusLabel.setText("New student added successfully.");
+            } else {
+                students.set(currentStudentIndex, currentStudent);
+                statusLabel.setText("Student updated successfully.");
             }
             
-            if (!enrollmentDateField.getText().trim().isEmpty()) {
-                enrollmentDate = LocalDate.parse(enrollmentDateField.getText(), formatter);
-            }
-        } catch (DateTimeParseException e) {
-            JOptionPane.showMessageDialog(this, "Invalid date format. Please use YYYY-MM-DD format.",
-                                         "Validation Error", JOptionPane.ERROR_MESSAGE);
-            return;
+            // Refresh table
+            refreshStudentList();
+        } catch (IllegalArgumentException e) {
+            // Display validation error
+            JOptionPane.showMessageDialog(this, e.getMessage(), 
+                    "Validation Error", JOptionPane.ERROR_MESSAGE);
         }
-        
-        // Parse GPA
-        double gpa = 0.0;
-        try {
-            if (!gpaField.getText().trim().isEmpty()) {
-                gpa = Double.parseDouble(gpaField.getText());
-                if (gpa < 0 || gpa > 4.0) {
-                    JOptionPane.showMessageDialog(this, "GPA must be between 0.0 and 4.0",
-                                                "Validation Error", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-            }
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Invalid GPA format. Please enter a number.",
-                                         "Validation Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-        
-        // Set student fields
-        currentStudent.setId(idField.getText());
-        currentStudent.setName(nameField.getText());
-        currentStudent.setSurname(surnameField.getText());
-        currentStudent.setCountry(countryField.getText());
-        currentStudent.setDateOfBirth(dob != null ? dob : LocalDate.now());
-        currentStudent.setStudyAbroad(studyAbroadCheckBox.isSelected());
-        currentStudent.setGpa(gpa);
-        currentStudent.setMajor(majorField.getText());
-        currentStudent.setEnrollmentDate(enrollmentDate != null ? enrollmentDate : LocalDate.now());
-        currentStudent.setEmail(emailField.getText());
-        currentStudent.setPhoneNumber(phoneField.getText());
-        
-        // Add to list if new
-        if (currentStudentIndex == -1) {
-            students.add(currentStudent);
-            statusLabel.setText("New student added successfully.");
-        } else {
-            students.set(currentStudentIndex, currentStudent);
-            statusLabel.setText("Student updated successfully.");
-        }
-        
-        // Refresh table
-        refreshStudentList();
     }
     
     /**
